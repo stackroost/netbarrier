@@ -1,5 +1,0 @@
-package filter
-
-func state(){
-	
-}

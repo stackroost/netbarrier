@@ -1,0 +1,4 @@
+ssh:
+  max_attempts: 5
+  ban_time: 600
+  find_time: 120
