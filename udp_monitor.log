@@ -1,0 +1,222 @@
+Running UDP Monitor
+Starting monitor: trace_udp → kprobe:sys_enter_sendto
+eBPF attached. Watching UDP sends per PID and IP...
+[udp_attempts] PID@IP -> Count
+[udp_attempts] Total: 0
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 2
+[udp_attempts] Total: 2
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 4
+[udp_attempts] Total: 4
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 6
+[udp_attempts] Total: 6
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 8
+[udp_attempts] Total: 8
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 8
+[udp_attempts] Total: 8
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 8
+[udp_attempts] Total: 8
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 8
+[udp_attempts] Total: 8
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 8
+[udp_attempts] Total: 8
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 8
+[udp_attempts] Total: 8
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 8
+[udp_attempts] Total: 8
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 8
+[udp_attempts] Total: 8
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 8
+[udp_attempts] Total: 8
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 8
+[udp_attempts] Total: 8
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 8
+[udp_attempts] Total: 8
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 8
+[udp_attempts] Total: 8
+
+[udp_attempts] PID@IP -> Count
+  3692@250.255.255.239 -> 8
+[udp_attempts] Total: 8
+

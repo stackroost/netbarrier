@@ -8,6 +8,8 @@ OUT_DIR="bin"
 INCLUDE_DIRS=(
   "/usr/include"
   "/usr/include/bpf"
+  "$(pwd)"  # Add current directory where vmlinux.h is located
+  # Alternatively, use "$SRC_DIR" if vmlinux.h is in bpf/
 )
 
 echo "[*] Building eBPF programs from '$SRC_DIR/' into '$OUT_DIR/'..."
