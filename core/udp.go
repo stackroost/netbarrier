@@ -20,36 +20,35 @@ type udpKey struct {
 func RunUDPMonitor() {
 	const (
 		bpfFile  = "bin/udp_monitor.o"
-		progName = "trace_udp"
 		mapName  = "udp_attempts"
-		hookFunc = "sys_enter_sendto"
+		progName = "udp_monitor"
 	)
 
-	fmt.Printf("Starting monitor: %s → kprobe:%s\n", progName, hookFunc)
+	fmt.Println("Starting UDP Monitor...")
 
-	// Load compiled eBPF object
 	spec, err := ebpf.LoadCollectionSpec(bpfFile)
 	if err != nil {
-		log.Fatalf("Load spec failed: %v", err)
+		log.Fatalf("Failed to load collection spec: %v", err)
 	}
 
 	coll, err := ebpf.NewCollection(spec)
 	if err != nil {
-		log.Fatalf("Load collection failed: %v", err)
+		log.Fatalf("Failed to load eBPF collection: %v", err)
 	}
 	defer coll.Close()
 
 	prog := coll.Programs[progName]
 	if prog == nil {
-		log.Fatalf("Program '%s' not found", progName)
+		log.Fatalf("Program '%s' not found in collection", progName)
 	}
 	defer prog.Close()
-	
-	lk, err := link.Tracepoint("syscalls", "sys_enter_sendto", prog, nil)
+
+	// Attach to __x64_sys_sendmsg (or change to sendto if needed)
+	kp, err := link.Kprobe("__x64_sys_sendmsg", prog, nil)
 	if err != nil {
-		log.Fatalf("Attach failed: %v", err)
+		log.Fatalf("Attach to __x64_sys_sendmsg failed: %v", err)
 	}
-	defer lk.Close()
+	defer kp.Close()
 
 	m := coll.Maps[mapName]
 	if m == nil {
@@ -57,7 +56,7 @@ func RunUDPMonitor() {
 	}
 	defer m.Close()
 
-	fmt.Println("eBPF attached. Watching UDP sends per PID and IP...")
+	fmt.Println("eBPF probe attached. Watching UDP sends per PID and IP...")
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, unix.SIGTERM)
@@ -68,7 +67,6 @@ func RunUDPMonitor() {
 	for {
 		select {
 		case <-ticker.C:
-			iter := m.Iterate()
 			var (
 				key   udpKey
 				value uint32
@@ -76,6 +74,7 @@ func RunUDPMonitor() {
 			)
 
 			fmt.Println("[udp_attempts] PID@IP -> Count")
+			iter := m.Iterate()
 			for iter.Next(&key, &value) {
 				ipStr := FormatIPv4(key.DstIP)
 				fmt.Printf("  %d@%s -> %d\n", key.PID, ipStr, value)
@@ -84,11 +83,10 @@ func RunUDPMonitor() {
 			fmt.Printf("[udp_attempts] Total: %d\n\n", total)
 
 			if err := iter.Err(); err != nil {
-				log.Printf("Iter error: %v", err)
+				log.Printf("Map iteration error: %v", err)
 			}
-
 		case <-sig:
-			fmt.Println("Monitor stopped")
+			fmt.Println("Monitor stopped.")
 			return
 		}
 	}
