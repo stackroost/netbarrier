@@ -11,12 +11,6 @@ MONITOR_LOG="udp_monitor.log"
 
 echo "[*] Using interface: $INTERFACE"
 
-# Start Go UDP monitor in background
-echo "[*] Starting eBPF UDP monitor..."
-sudo go run main.go udp-monitor > "$MONITOR_LOG" 2>&1 &
-MONITOR_PID=$!
-sleep 1  # Let monitor attach
-
 # Start a UDP listener in background
 echo "[*] Starting UDP listener on $TARGET_IP:$PORT"
 nc -u -l "$TARGET_IP" "$PORT" > /dev/null &
