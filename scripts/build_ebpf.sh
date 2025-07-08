@@ -1,38 +1,28 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/bash
+set -e
 
-# Constants
-ARCH="x86"
-SRC_DIR="bpf"
+PROBE_DIR="ebpf-programs/ssh_monitor"
+TARGET_DIR="$PROBE_DIR/target/bpfel-unknown-none/release/deps"
 OUT_DIR="bin"
-INCLUDE_DIRS=(
-  "/usr/include"
-  "/usr/include/bpf"
-  "$(pwd)"  # Add current directory where vmlinux.h is located
-  # Alternatively, use "$SRC_DIR" if vmlinux.h is in bpf/
-)
+OUT_FILE="$OUT_DIR/ssh_monitor.o"
 
-echo "[*] Building eBPF programs from '$SRC_DIR/' into '$OUT_DIR/'..."
+echo "📦 Building eBPF LLVM bitcode..."
+
+cargo +nightly rustc --release \
+  --manifest-path "$PROBE_DIR/Cargo.toml" \
+  --target bpfel-unknown-none -Z build-std=core \
+  -- --emit=obj
+
+echo "🔍 Searching for compiled bitcode..."
+OBJ_BC=$(find "$TARGET_DIR" -maxdepth 1 -name 'ssh_monitor_ebpf-*.o' | head -n1)
+
+if [[ -z "$OBJ_BC" ]]; then
+  echo "❌ Failed: Bitcode .o not found"
+  exit 1
+fi
+
+echo "🔧 Converting to ELF using llc-20..."
 mkdir -p "$OUT_DIR"
+llc-20 -march=bpf -filetype=obj -o "$OUT_FILE" "$OBJ_BC"
 
-INCLUDES=""
-for dir in "${INCLUDE_DIRS[@]}"; do
-  INCLUDES+=" -I $dir"
-done
-
-# Build each .c file in the bpf/ directory
-for SRC_FILE in "$SRC_DIR"/*.c; do
-  FILENAME=$(basename "$SRC_FILE")
-  BASENAME="${FILENAME%.c}"
-  OUT_FILE="$OUT_DIR/$BASENAME.o"
-
-  echo "    → Compiling $SRC_FILE → $OUT_FILE"
-
-  clang -target bpf \
-    -D__TARGET_ARCH_${ARCH} \
-    -O2 -g -Wall -Werror \
-    $INCLUDES \
-    -c "$SRC_FILE" -o "$OUT_FILE"
-done
-
-echo "[✓] All eBPF programs built successfully into '$OUT_DIR/'."
+echo "✅ Done: ELF object copied to $OUT_FILE"

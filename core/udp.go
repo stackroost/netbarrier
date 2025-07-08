@@ -1,7 +1,6 @@
 package core
 
 import (
-	"encoding/binary"
 	"fmt"
 	"log"
 	"os"
@@ -78,7 +77,7 @@ func RunUDPMonitor() {
 
 			fmt.Println("[udp_attempts] PID@IP -> Count")
 			for iter.Next(&key, &value) {
-				ipStr := formatIPv4(key.DstIP)
+				ipStr := FormatIPv4(key.DstIP)
 				fmt.Printf("  %d@%s -> %d\n", key.PID, ipStr, value)
 				total += value
 			}
@@ -93,10 +92,4 @@ func RunUDPMonitor() {
 			return
 		}
 	}
-}
-
-func formatIPv4(n uint32) string {
-	b := make([]byte, 4)
-	binary.BigEndian.PutUint32(b, n)
-	return fmt.Sprintf("%d.%d.%d.%d", b[0], b[1], b[2], b[3])
 }

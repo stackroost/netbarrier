@@ -1,0 +1,31 @@
+# Binaries and object files
+bin/
+*.o
+*.elf
+
+# Rust build artifacts
+**/target/
+**/Cargo.lock
+
+# Go build/test artifacts
+*.test
+*.out
+
+# Logs
+logs/
+*.log
+
+# Editor and system files
+.DS_Store
+*.swp
+*.swo
+*.bak
+*.tmp
+
+# IDE/editor folders
+.vscode/
+.idea/
+
+# Node or frontend stuff (if added in future)
+node_modules/
+dist/
