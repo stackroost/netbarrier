@@ -1,5 +1,4 @@
 # Binaries and object files
-bin/
 *.o
 *.elf
 
