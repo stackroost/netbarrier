@@ -4,7 +4,7 @@
 #![allow(unused_unsafe)]
 
 use aya_ebpf::{
-    helpers::{bpf_get_current_pid_tgid, bpf_probe_read},
+    helpers::{bpf_get_current_pid_tgid},
     macros::{kprobe, map},
     maps::HashMap,
     programs::ProbeContext,
