@@ -1,72 +1,60 @@
 #![no_std]
 #![no_main]
-#![allow(static_mut_refs)]
-#![allow(unused_unsafe)]
 
 use aya_ebpf::{
-    helpers::{bpf_get_current_pid_tgid, bpf_probe_read},
-    macros::{kprobe, map},
-    maps::HashMap,
+    macros::map,
+    maps::{HashMap, RingBuf},
     programs::ProbeContext,
+    helpers::{bpf_get_current_comm, bpf_get_current_pid_tgid, bpf_get_current_uid_gid, bpf_ktime_get_ns},
+    bpf_printk,
 };
 
 #[repr(C)]
-#[derive(Copy, Clone)]
-pub struct SshKey {
+#[derive(Clone, Copy)]
+pub struct SshFailEvent {
     pub pid: u32,
-    pub ip: u32,
+    pub uid: u32,
+    pub ts: u64,
+    pub comm: [u8; 16],
 }
 
-#[map(name = "ssh_attempts")]
-static mut SSH_ATTEMPTS: HashMap<SshKey, u32> = HashMap::<SshKey, u32>::with_max_entries(1024, 0);
+#[map(name = "SSH_FAIL_RINGBUF")]
+static mut SSH_FAIL_RINGBUF: RingBuf = RingBuf::with_byte_size(4096, 0);
 
-#[kprobe]
-pub fn trace_ssh(ctx: ProbeContext) -> u32 {
-    match try_trace_ssh(ctx) {
-        Ok(_) => 0,
-        Err(_) => 1,
-    }
-}
+#[map(name = "SSH_FAIL_COUNTS")]
+static mut SSH_FAIL_COUNTS: HashMap<u32, u32> = HashMap::with_max_entries(1024, 0);
 
-fn try_trace_ssh(ctx: ProbeContext) -> Result<(), ()> {
+#[no_mangle]
+#[link_section = "kprobe/tty_write"]
+pub fn ssh_fail_monitor(ctx: ProbeContext) -> u32 {
     let pid = (bpf_get_current_pid_tgid() >> 32) as u32;
+    let uid = (bpf_get_current_uid_gid() >> 32) as u32;
+    let ts = unsafe { bpf_ktime_get_ns() };
 
-    let sockaddr_ptr: *const u8 = ctx.arg(1).ok_or(())?;
-
-    let sa_family: u16 = unsafe { bpf_probe_read(sockaddr_ptr as *const u16) }.map_err(|_| ())?;
-    if sa_family != 2 {
-        return Ok(()); // Only AF_INET
+    let mut comm = [0u8; 16];
+    if let Ok(c) = bpf_get_current_comm() {
+        comm.copy_from_slice(&c);
+        if !comm.starts_with(b"sshd") {
+            return 0;
+        }
+    } else {
+        return 0;
     }
 
-    let port_be: u16 = unsafe {
-        bpf_probe_read(sockaddr_ptr.add(2) as *const u16)
-    }.map_err(|_| ())?;
-    let port = u16::from_be(port_be);
-    if port != 22 {
-        return Ok(()); // Only SSH
-    }
-
-    let ip_bytes: [u8; 4] = unsafe {
-        bpf_probe_read(sockaddr_ptr.add(4) as *const [u8; 4])
-    }.map_err(|_| ())?;
-
-    let ip = u32::from_le_bytes(ip_bytes);
-    let key = SshKey { pid, ip };
+    let event = SshFailEvent { pid, uid, ts, comm };
 
     unsafe {
-        match SSH_ATTEMPTS.get_ptr_mut(&key) {
-            Some(val) => *val += 1,
-            None => {
-                let _ = SSH_ATTEMPTS.insert(&key, &1, 0);
-            }
-        }
+        let count = SSH_FAIL_COUNTS.get(&uid).copied().unwrap_or(0);
+        SSH_FAIL_COUNTS.insert(&uid, &(count + 1), 0).ok();
+        let _ = SSH_FAIL_RINGBUF.output(&event, 0);
+        bpf_printk!(b"[ssh_fail] UID=%d PID=%d\n", uid, pid);
     }
 
-    Ok(())
+    0
 }
 
 #[panic_handler]
-fn panic(_info: &core::panic::PanicInfo) -> ! {
+fn panic(_: &core::panic::PanicInfo) -> ! {
     loop {}
 }
 

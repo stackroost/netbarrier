@@ -1,11 +1,11 @@
 [package]
-name = "ssh_monitor"
+name = "ssh_fail_monitor"
 version = "0.1.0"
 edition = "2021"
 
 [lib]
 crate-type = ["staticlib"]
-name = "ssh_monitor"
+name = "ssh_fail_monitor"
 
 [dependencies]
 aya-ebpf = { version = "0.1.1", default-features = false }
