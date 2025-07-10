@@ -1,10 +1,8 @@
 package core
 
 import (
-	"encoding/binary"
 	"fmt"
 	"log"
-	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -77,7 +75,7 @@ defer kprobe.Close()
 
 			fmt.Println("[ssh_attempts] PID@IP -> Count")
 			for iter.Next(&key, &value) {
-				ipStr := formatIPv4(key.IP)
+				ipStr := FormatIPv4(key.IP)
 				fmt.Printf("  %d@%s -> %d\n", key.PID, ipStr, value)
 				total += value
 			}
@@ -92,11 +90,4 @@ defer kprobe.Close()
 			return
 		}
 	}
-}
-
-// Converts uint32 IP to dotted IPv4 string
-func formatIPv4(ip uint32) string {
-	ipBytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(ipBytes, ip)
-	return net.IP(ipBytes).String()
 }
