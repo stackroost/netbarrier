@@ -14,7 +14,6 @@ import (
 	"github.com/cilium/ebpf/ringbuf"
 )
 
-// Match Rust layout (repr(C))
 type SshSessionEvent struct {
 	Pid         uint32
 	Uid         uint32
@@ -29,27 +28,23 @@ func RunSSHSessionMonitor() error {
 		return fmt.Errorf("load spec: %w", err)
 	}
 
-	// Load with no pinning or options
 	coll, err := ebpf.NewCollectionWithOptions(spec, ebpf.CollectionOptions{})
 	if err != nil {
 		return fmt.Errorf("create collection: %w", err)
 	}
 	defer coll.Close()
-
-	// Get maps
+	
 	ringbufMap := coll.Maps["SSH_SESSION_RINGBUF"]
 	if ringbufMap == nil {
 		return fmt.Errorf("map SSH_SESSION_RINGBUF not found")
 	}
 
-	// Attach kprobe to track shell exec
 	kp, err := link.Kprobe("do_execveat_common", coll.Programs["track_shell_start"], nil)
 	if err != nil {
 		return fmt.Errorf("attach kprobe: %w", err)
 	}
 	defer kp.Close()
 
-	// Attach tracepoint to track process exit
 	tp, err := link.Tracepoint("sched", "sched_process_exit", coll.Programs["sched_process_exit"], nil)
 	if err != nil {
 		return fmt.Errorf("attach tracepoint: %w", err)
@@ -57,15 +52,11 @@ func RunSSHSessionMonitor() error {
 	defer tp.Close()
 
 	log.Println("SSH Session Monitor started. Waiting for events...")
-
-	// Set up ring buffer reader
 	reader, err := ringbuf.NewReader(ringbufMap)
 	if err != nil {
 		return fmt.Errorf("open ringbuf: %w", err)
 	}
 	defer reader.Close()
-
-	// Graceful shutdown on Ctrl+C
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt)
 

@@ -1,5 +1,0 @@
-[build]
-rustflags = [
-  "-Zbuild-std=core,compiler_builtins",
-  "-Zbuild-std-features=compiler-builtins-mem"
-]
