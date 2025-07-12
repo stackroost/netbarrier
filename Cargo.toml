@@ -1,0 +1,15 @@
+[workspace]
+members = [".", "xtask", "ssh-monitor-ebpf"]
+resolver = "2"
+
+[package]
+name = "ssh-monitor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+aya = "0.1.1"
+anyhow = "1.0"
+clap = { version = "4.4", features = ["derive"] }
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros", "signal"] }
+libc = "0.2"

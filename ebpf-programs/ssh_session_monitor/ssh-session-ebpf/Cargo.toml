@@ -1,0 +1,11 @@
+[package]
+name = "ssh-session-ebpf"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+aya-ebpf = "0.1.1"
+aya-ebpf-macros = "0.1.1"

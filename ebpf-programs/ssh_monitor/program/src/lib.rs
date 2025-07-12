@@ -2,11 +2,13 @@
 #![no_main]
 
 use aya_ebpf::{
+    bpf_printk,
+    helpers::{
+        bpf_get_current_comm, bpf_get_current_pid_tgid, bpf_get_current_uid_gid,
+        bpf_ktime_get_ns,
+    },
     macros::map,
     maps::{HashMap, RingBuf},
-    programs::ProbeContext,
-    helpers::{bpf_get_current_comm, bpf_get_current_pid_tgid, bpf_get_current_uid_gid, bpf_ktime_get_ns},
-    bpf_printk,
 };
 
 #[repr(C)]
@@ -26,7 +28,7 @@ static mut SSH_FAIL_COUNTS: HashMap<u32, u32> = HashMap::with_max_entries(1024, 
 
 #[no_mangle]
 #[link_section = "kprobe/tty_write"]
-pub fn ssh_fail_monitor(ctx: ProbeContext) -> u32 {
+pub fn ssh_fail_monitor() -> u32 {
     let pid = (bpf_get_current_pid_tgid() >> 32) as u32;
     let uid = (bpf_get_current_uid_gid() >> 32) as u32;
     let ts = unsafe { bpf_ktime_get_ns() };
@@ -44,12 +46,21 @@ pub fn ssh_fail_monitor(ctx: ProbeContext) -> u32 {
     let event = SshFailEvent { pid, uid, ts, comm };
 
     unsafe {
-        let count = SSH_FAIL_COUNTS.get(&uid).copied().unwrap_or(0);
-        SSH_FAIL_COUNTS.insert(&uid, &(count + 1), 0).ok();
-        let _ = SSH_FAIL_RINGBUF.output(&event, 0);
-        bpf_printk!(b"[ssh_fail] UID=%d PID=%d\n", uid, pid);
+    let map_ptr = core::ptr::addr_of_mut!(SSH_FAIL_COUNTS);
+    let ringbuf_ptr = core::ptr::addr_of_mut!(SSH_FAIL_RINGBUF);
+
+    match (*map_ptr).get(&uid).copied() {
+        Some(count) => {
+            let _ = (*map_ptr).insert(&uid, &(count + 1), 0);
+        }
+        None => {
+            let _ = (*map_ptr).insert(&uid, &1, 0);
+        }
     }
 
+    let _ = (*ringbuf_ptr).output(&event, 0);
+    let _ = bpf_printk!(b"[ssh_fail] UID=%d PID=%d\n", uid, pid);
+}
     0
 }
 
