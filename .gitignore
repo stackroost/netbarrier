@@ -29,3 +29,5 @@ logs/
 # Node or frontend stuff (if added in future)
 node_modules/
 dist/
+
+ebpf-programs/ssh_session_monitor/vmlinux.h
