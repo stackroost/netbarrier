@@ -7,86 +7,130 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"os/user"
+	"strconv"
 	"time"
 
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
-	"github.com/cilium/ebpf/ringbuf"
+	"github.com/cilium/ebpf/perf"
+	"github.com/cilium/ebpf/rlimit"
 )
 
-type SshSessionEvent struct {
-	Pid         uint32
-	Uid         uint32
-	StartTimeNs uint64
-	DurationNs  uint64
-	Comm        [16]byte
+type ShellEvent struct {
+	Pid       uint32
+	Uid       uint32
+	EventType uint8
+	_         [3]byte // padding
+	Comm      [16]byte
+}
+
+func uidToUsername(uid uint32) string {
+	uidStr := strconv.Itoa(int(uid))
+	u, err := user.LookupId(uidStr)
+	if err != nil {
+		return "unknown"
+	}
+	return u.Username
 }
 
 func RunSSHSessionMonitor() error {
+	if err := rlimit.RemoveMemlock(); err != nil {
+		return fmt.Errorf("remove memlock: %w", err)
+	}
+
 	spec, err := ebpf.LoadCollectionSpec("bin/ssh_session_monitor.o")
 	if err != nil {
 		return fmt.Errorf("load spec: %w", err)
 	}
 
-	coll, err := ebpf.NewCollectionWithOptions(spec, ebpf.CollectionOptions{})
-	if err != nil {
-		return fmt.Errorf("create collection: %w", err)
-	}
-	defer coll.Close()
-	
-	ringbufMap := coll.Maps["SSH_SESSION_RINGBUF"]
-	if ringbufMap == nil {
-		return fmt.Errorf("map SSH_SESSION_RINGBUF not found")
-	}
+	objs := struct {
+		TrackShellStart *ebpf.Program `ebpf:"track_shell_start"`
+		TrackShellExit  *ebpf.Program `ebpf:"track_shell_exit"`
+		EVENTS          *ebpf.Map     `ebpf:"EVENTS"`
+		Sessions        *ebpf.Map     `ebpf:"sessions"`
+	}{}
 
-	kp, err := link.Kprobe("do_execveat_common", coll.Programs["track_shell_start"], nil)
-	if err != nil {
-		return fmt.Errorf("attach kprobe: %w", err)
+	if err := spec.LoadAndAssign(&objs, nil); err != nil {
+		return fmt.Errorf("load & assign: %w", err)
 	}
-	defer kp.Close()
+	defer objs.TrackShellStart.Close()
+	defer objs.TrackShellExit.Close()
+	defer objs.EVENTS.Close()
+	defer objs.Sessions.Close()
 
-	tp, err := link.Tracepoint("sched", "sched_process_exit", coll.Programs["sched_process_exit"], nil)
+	tpStart, err := link.Tracepoint("sched", "sched_process_exec", objs.TrackShellStart, nil)
 	if err != nil {
-		return fmt.Errorf("attach tracepoint: %w", err)
+		return fmt.Errorf("attach exec tracepoint: %w", err)
 	}
-	defer tp.Close()
+	defer tpStart.Close()
 
-	log.Println("SSH Session Monitor started. Waiting for events...")
-	reader, err := ringbuf.NewReader(ringbufMap)
+	tpExit, err := link.Tracepoint("sched", "sched_process_exit", objs.TrackShellExit, nil)
 	if err != nil {
-		return fmt.Errorf("open ringbuf: %w", err)
+		return fmt.Errorf("attach exit tracepoint: %w", err)
 	}
-	defer reader.Close()
+	defer tpExit.Close()
+
+	rd, err := perf.NewReader(objs.EVENTS, os.Getpagesize())
+	if err != nil {
+		return fmt.Errorf("open perf reader: %w", err)
+	}
+	defer rd.Close()
+
+	log.Println("Monitoring shell sessions. Press Ctrl+C to exit.")
+
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt)
+
+	active := make(map[uint32]ShellEvent)
 
 loop:
 	for {
 		select {
 		case <-sig:
-			log.Println("Exiting SSH Session Monitor...")
+			log.Println("Exiting.")
 			break loop
+
 		default:
-			record, err := reader.Read()
+			record, err := rd.Read()
 			if err != nil {
-				if err != ringbuf.ErrClosed {
-					log.Printf("read ringbuf: %v", err)
+				if err == perf.ErrClosed {
+					break loop
 				}
+				log.Printf("perf read error: %v", err)
 				continue
 			}
 
-			var event SshSessionEvent
-			if err := binary.Read(bytes.NewBuffer(record.RawSample), binary.LittleEndian, &event); err != nil {
-				log.Printf("decode event: %v", err)
+			var ev ShellEvent
+			if err := binary.Read(bytes.NewReader(record.RawSample), binary.LittleEndian, &ev); err != nil {
+				log.Printf("decode error: %v", err)
 				continue
 			}
 
-			start := time.Unix(0, int64(event.StartTimeNs))
-			duration := time.Duration(event.DurationNs)
-			comm := string(bytes.TrimRight(event.Comm[:], "\x00"))
+			username := uidToUsername(ev.Uid)
+			action := "START"
+			if ev.EventType == 1 {
+				action = "EXIT"
+				delete(active, ev.Pid)
+			} else {
+				active[ev.Pid] = ev
+			}
 
-			fmt.Printf("[ssh_session] PID=%d UID=%d Comm=%s Started=%s Duration=%s\n",
-				event.Pid, event.Uid, comm, start.Format(time.RFC3339), duration)
+			fmt.Printf("[%s] %s PID=%d UID=%d USER=%s COMM=%s\n",
+				time.Now().Format("15:04:05"),
+				action,
+				ev.Pid,
+				ev.Uid,
+				username,
+				bytes.TrimRight(ev.Comm[:], "\x00"))
+
+			fmt.Println("Active Shell Sessions:")
+			for _, s := range active {
+				userStr := uidToUsername(s.Uid)
+				fmt.Printf("- PID %d, UID %d, USER=%s, COMM=%s\n",
+					s.Pid, s.Uid, userStr, bytes.TrimRight(s.Comm[:], "\x00"))
+			}
+			fmt.Println()
 		}
 	}
 
