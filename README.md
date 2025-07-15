@@ -1,27 +1,71 @@
 # NetBarrier
 
-NetBarrier is a real-time Linux security and session monitoring tool built with Go and Rust-based eBPF programs. It tracks SSH and shell sessions, detects failed login attempts, monitors TCP/UDP connections, and provides user-level visibility into system activity.
+**NetBarrier** is a real-time security monitoring and intrusion prevention system for Linux servers built using **eBPF** (extended Berkeley Packet Filter). It provides fine-grained visibility into SSH connections, TCP/UDP activity, and user sessions, empowering server administrators with deep observability and proactive defense.
+
+---
 
 ## Features
 
-- SSH and shell session tracking with real-time user and TTY resolution
-- Failed SSH login detection for brute-force monitoring
-- TCP and UDP connection monitoring using low-overhead eBPF probes
-- Go-based agent for communication and reporting
-- Written with performance and minimalism in mind, using pure eBPF and Go without external dependencies
+- Monitor SSH connections and failed login attempts
+- Track active SSH sessions and durations
+- Real-time TCP and UDP traffic monitoring
+- Lightweight Go-based agent with eBPF integration
+- Suitable for production systems, CI pipelines, and cloud infrastructure
 
-## Requirements
+---
 
-- Linux kernel 5.10 or higher
-- Go 1.20+
-- Rust (for Rust-based eBPF, or Clang/LLVM for C-based eBPF)
-- Root privileges to load eBPF programs
+## Installation
 
-## Build
-
-Clone the repository and build both the eBPF programs and the Go agent.
+Clone the repository and build:
 
 ```bash
-git clone https://github.com/stackroost/netbarrier
+git clone https://github.com/stackroost/netbarrier.git
 cd netbarrier
+go build -o netbarrier main.go
 ```
+
+---
+
+## Usage
+
+Run the CLI with:
+
+```bash
+./netbarrier <command>
+```
+
+---
+
+## Commands
+
+### 🛡️ Agent
+
+| Command             | Description                                        |
+|---------------------|----------------------------------------------------|
+| `netbarrier`        | Start the default NetBarrier agent                 |
+| `netbarrier agent`  | Start the monitoring agent manually                |
+
+---
+
+### 📡 Network Monitoring
+
+| Command                     | Description                                       |
+|-----------------------------|---------------------------------------------------|
+| `netbarrier connections`    | Run TCP connection monitor using eBPF             |
+| `netbarrier udp-monitor`    | Monitor all UDP send traffic using `sys_sendto`   |
+
+---
+
+### 🔐 SSH Monitoring
+
+| Command                           | Description                                             |
+|-----------------------------------|---------------------------------------------------------|
+| `netbarrier ssh-monitor`          | Track all SSH connection attempts                      |
+| `netbarrier ssh-fail-monitor`     | Monitor failed SSH login attempts using eBPF           |
+| `netbarrier ssh-session-monitor`  | Track active shell/SSH sessions and durations          |
+
+---
+
+## License
+
+MIT License © [Stackroost](https://github.com/stackroost)
